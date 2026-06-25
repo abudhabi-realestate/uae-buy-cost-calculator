@@ -2,6 +2,8 @@
 
 离线静态页，支持**期房**与**二手现房**费用估算；期房含付款计划与 Excel 导出。
 
+**在线访问：** https://nothing9802.github.io/uae-buy-cost-calculator/
+
 ## 功能
 
 - **期房**：迪拜 DLD / 阿布扎比 ADREC 登记费、付款计划、导出 Excel（不含交房 Title Deed 阶段费用展示）
