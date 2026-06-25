@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>阿联酋买房总成本计算器 · 期房 / 二手现房</title>
+  <style>
+    :root {
+      --bg: #f4f1eb;
+      --surface: #fff;
+      --text: #1c1917;
+      --muted: #78716c;
+      --border: #e7e5e4;
+      --accent: #b45309;
+      --accent-dark: #92400e;
+      --ok: #15803d;
+      --bad: #b91c1c;
+      --line: #f5f5f4;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .page { max-width: 1040px; margin: 0 auto; padding: 28px 20px 56px; }
+    header { margin-bottom: 24px; }
+    h1 { font-size: 1.55rem; font-weight: 700; color: #0c0a09; margin-bottom: 6px; }
+    .subtitle { font-size: .9rem; color: var(--muted); max-width: 44rem; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(28, 25, 23, .07);
+      border: 1px solid var(--border);
+    }
+    .card h2 {
+      font-size: .95rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #44403c;
+    }
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .card-head h2 { margin-bottom: 0; }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: .84rem;
+      font-weight: 600;
+      color: #44403c;
+      margin-bottom: 6px;
+    }
+    .field .hint {
+      font-size: .74rem;
+      color: var(--muted);
+      font-weight: 400;
+      margin-top: 4px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: .95rem;
+      background: #fff;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #d97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
+    }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    @media (max-width: 640px) {
+      .row2, .row3 { grid-template-columns: 1fr; }
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .86rem;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .toggle-row input { width: auto; accent-color: var(--accent); }
+
+    .adv-toggle {
+      background: none;
+      border: none;
+      color: var(--accent-dark);
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      margin: 4px 0 12px;
+      text-decoration: underline;
+    }
+    .advanced { display: none; }
+    .advanced.open { display: block; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .summary-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 720px) { .summary-grid.three { grid-template-columns: 1fr; } }
+
+    #mortgageSummary { display: none; margin-top: 14px; }
+    #mortgageSummary.show { display: block; }
+    #mortgageSummary h3 {
+      font-size: .88rem;
+      font-weight: 700;
+      color: #44403c;
+      margin-bottom: 10px;
+    }
+
+    .stat {
+      background: var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .stat.highlight {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 1px solid #fcd34d;
+    }
+    .stat b {
+      display: block;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0c0a09;
+      margin: 4px 0 2px;
+    }
+    .stat span { font-size: .76rem; color: var(--muted); }
+    .stat small { display: block; font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+    table.data {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .84rem;
+    }
+    table.data th, table.data td {
+      padding: 9px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    table.data th { color: var(--muted); font-weight: 600; font-size: .76rem; }
+    table.data td.num, table.data th.num { text-align: right; white-space: nowrap; }
+    table.data tr.section td {
+      background: #fafaf9;
+      font-weight: 700;
+      color: #57534e;
+      font-size: .78rem;
+      padding-top: 12px;
+    }
+    table.data tr.total td {
+      font-weight: 800;
+      border-top: 2px solid var(--border);
+      border-bottom: none;
+      font-size: .92rem;
+    }
+    .pct { color: var(--muted); font-size: .74rem; margin-left: 4px; }
+
+    table.plan-edit { font-size: .82rem; }
+    table.plan-edit input[type="text"],
+    table.plan-edit input[type="number"] {
+      padding: 6px 8px;
+      font-size: .82rem;
+      border-radius: 8px;
+    }
+    table.plan-edit input[type="number"] { text-align: right; }
+    table.plan-edit td { vertical-align: middle; }
+    table.plan-edit .btn-icon {
+      background: none;
+      border: none;
+      color: var(--bad);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 4px;
+    }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button.btn {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: .86rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { background: #e7e5e4; color: #44403c; }
+    .btn-secondary:hover { background: #d6d3d1; }
+    .btn-export { background: #166534; color: #fff; }
+    .btn-export:hover { background: #14532d; }
+
+    .pct-badge {
+      display: inline-block;
+      font-size: .78rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .pct-badge.ok { background: #dcfce7; color: var(--ok); }
+    .pct-badge.bad { background: #fee2e2; color: var(--bad); }
+
+    .callout {
+      margin-top: 16px;
+      background: #fffbeb;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: .78rem;
+      color: #78350f;
+    }
+    .callout strong { color: var(--accent-dark); }
+
+    .footnote {
+      margin-top: 20px;
+      font-size: .72rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    #paymentPlanSection { display: block; margin-top: 16px; }
+    #paymentPlanSection.hidden { display: none; }
+
+    table.plan-edit tr.handover-row { background: #fffbeb; }
+    table.plan-edit tr.handover-row .plan-name { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>阿联酋买房总成本计算器</h1>
+      <p class="subtitle">期房 / 二手现房购房一次性费用估算；期房支持付款计划与 Excel 导出。仅供参考，实际以 SPA、DLD / ADREC 及银行报价为准。</p>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        <h2>基本信息</h2>
+
+        <div class="field">
+          <label for="emirate">酋长国</label>
+          <select id="emirate">
+            <option value="dubai">迪拜 Dubai</option>
+            <option value="abudhabi">阿布扎比 Abu Dhabi</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="scenario">购房类型</label>
+          <select id="scenario">
+            <option value="offplan" selected>期房 · Off-plan</option>
+            <option value="secondary">现房 · 二手市场</option>
+          </select>
+          <p class="hint" id="scenarioHint">可配置付款计划；登记费按 Oqood / ADREC 阶段估算。</p>
+        </div>
+
+        <div class="field">
+          <label for="price">购房总价（AED）</label>
+          <input type="text" id="price" inputmode="numeric" value="2000000" placeholder="例如 2000000" />
+          <p class="hint">约 ¥ <span id="priceCny">3,900,000</span>（按当前汇率估算）</p>
+        </div>
+
+        <div class="field" id="projectNameField">
+          <label for="projectName">项目名称（导出用，可选）</label>
+          <input type="text" id="projectName" placeholder="例如 Emaar xxx Tower" />
+        </div>
+
+        <div class="field">
+          <label class="toggle-row" for="mortgage">
+            <input type="checkbox" id="mortgage" />
+            <span id="mortgageToggleLabel">使用按揭贷款（通常仅交房尾款可贷）</span>
+          </label>
+        </div>
+
+        <div id="mortgageFields" style="display:none">
+          <div class="row2">
+            <div class="field">
+              <label for="ltv">贷款比例 LTV（%）</label>
+              <input type="number" id="ltv" min="0" max="80" step="1" value="50" />
+            </div>
+            <div class="field">
+              <label for="downPct">首付比例（%）</label>
+              <input type="number" id="downPct" min="20" max="100" step="1" value="50" readonly />
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="interestRate">年利率（%）</label>
+              <input type="number" id="interestRate" min="0" max="20" step="0.01" value="4.99" />
+              <p class="hint">以银行报价为准，UAE 常见约 4%–6%（固定/浮动因行而异）</p>
+            </div>
+            <div class="field">
+              <label for="loanYears">贷款年限（年）</label>
+              <input type="number" id="loanYears" min="1" max="30" step="1" value="25" />
+            </div>
+          </div>
+          <p class="hint" style="margin-top:-4px">利息按<strong>等额本息</strong>估算，自交房后开始计息；施工期仅开发商付款计划，通常不产生按揭利息。</p>
+        </div>
+
+        <button type="button" class="adv-toggle" id="advToggle">▸ 自定义费率（可选）</button>
+        <div class="advanced" id="advanced">
+          <div class="row2">
+            <div class="field">
+              <label for="dldRate" id="regRateLabel">登记费率（%）</label>
+              <input type="number" id="dldRate" min="0" max="10" step="0.1" value="4" />
+            </div>
+            <div class="field">
+              <label for="trusteeFee">托管中心 / Trustee（AED）</label>
+              <input type="number" id="trusteeFee" min="0" step="100" value="4000" />
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="bankFeeRate">银行手续费（占贷款 %）</label>
+              <input type="number" id="bankFeeRate" min="0" max="3" step="0.1" value="1" />
+            </div>
+            <div class="field">
+              <label for="aedCny">AED → CNY 汇率</label>
+              <input type="number" id="aedCny" min="0" step="0.01" value="1.95" />
+            </div>
+          </div>
+          <div class="row2" id="secondaryFeeFields" style="display:none">
+            <div class="field">
+              <label for="agencyRate">买方经纪佣金（%）</label>
+              <input type="number" id="agencyRate" min="0" max="5" step="0.1" value="2" />
+            </div>
+            <div class="field">
+              <label for="nocFee">NOC 费用（AED）</label>
+              <input type="number" id="nocFee" min="0" step="100" value="3000" />
+            </div>
+          </div>
+          <div id="offplanAdvancedOptions">
+          <label class="toggle-row" for="dldWaiver">
+            <input type="checkbox" id="dldWaiver" />
+            <span id="waiverLabel">开发商减免登记费（部分期房促销）</span>
+          </label>
+          <label class="toggle-row" for="dldWithFirst">
+            <input type="checkbox" id="dldWithFirst" checked />
+            <span id="regWithFirstLabel">登记费计入首期一并支付</span>
+          </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>费用估算</h2>
+
+        <div class="summary-grid">
+          <div class="stat highlight">
+            <span>除房价外，额外一次性成本</span>
+            <b id="extraTotal">—</b>
+            <small id="extraPct">—</small>
+          </div>
+          <div class="stat">
+            <span id="cashNeedLabel">近期需准备现金</span>
+            <b id="cashNeed">—</b>
+            <small id="cashNeedSub">—</small>
+          </div>
+        </div>
+
+        <table class="data">
+          <thead>
+            <tr><th>项目</th><th class="num">金额（AED）</th></tr>
+          </thead>
+          <tbody id="breakdown"></tbody>
+        </table>
+
+        <div class="callout" id="timingNote"></div>
+
+        <div id="mortgageSummary">
+          <h3>贷款利息估算（等额本息）</h3>
+          <table class="data">
+            <tbody id="mortgageBreakdown"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" id="paymentPlanSection">
+      <div class="card-head">
+        <h2>期房付款计划</h2>
+        <button type="button" class="btn btn-export" id="btnExportExcel">导出 Excel</button>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="bookingDate">签约 / 预订日</label>
+          <input type="date" id="bookingDate" />
+        </div>
+        <div class="field">
+          <label for="handoverDate">预计完工 / 交房日</label>
+          <input type="date" id="handoverDate" />
+          <p class="hint" id="handoverHint">工期约 36 个月（3.0 年）</p>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="handoverMonths">或：签约后月数</label>
+          <input type="number" id="handoverMonths" min="1" max="120" step="1" value="36" />
+          <p class="hint">改月数或完工日，下方各期「预计日期」会立即重算。</p>
+        </div>
+        <div class="field">
+          <label for="constructionPhases">施工期付款期数</label>
+          <input type="number" id="constructionPhases" min="0" max="12" step="1" value="4" />
+          <p class="hint" id="constructionHint">施工期合计 40%，4 期 ≈ 每期 10%（不含签约与交房）</p>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="bookingPct">签约 / 预订比例（%）</label>
+          <input type="number" id="bookingPct" min="0" max="100" step="0.1" value="10" />
+        </div>
+        <div class="field">
+          <label for="handoverPct">交房 / 尾款比例（%）</label>
+          <input type="number" id="handoverPct" min="0" max="100" step="0.1" value="50" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="planPreset">常用模板</label>
+          <select id="planPreset">
+            <option value="custom">自定义</option>
+            <option value="20-80">20% 签约 + 80% 交房</option>
+            <option value="10-10-10-10-10-50" selected>10% 签约 + 4 期施工 + 50% 交房</option>
+            <option value="60-40">20% 签约 + 2 期施工 + 40% 交房</option>
+            <option value="50-50">10% 签约 + 2 期施工 + 50% 交房</option>
+            <option value="80-20">20% 签约 + 2 期施工 + 20% 交房</option>
+          </select>
+        </div>
+        <div class="field">
+          <button type="button" class="btn btn-secondary" id="btnRebuildPlan" style="margin-top:22px;width:100%">按配置重建付款计划</button>
+        </div>
+      </div>
+
+      <span class="pct-badge ok" id="pctBadge">比例合计：100%</span>
+
+      <div class="plan-scroll">
+        <table class="data plan-edit">
+          <thead>
+            <tr>
+              <th style="width:28%">节点名称</th>
+              <th class="num" style="width:12%">比例 %</th>
+              <th class="num" style="width:14%">签约后月数</th>
+              <th style="width:14%">预计日期</th>
+              <th class="num" style="width:16%">房款 AED</th>
+              <th style="width:8%"></th>
+            </tr>
+          </thead>
+          <tbody id="planEditBody"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" id="btnAddRow">+ 添加节点</button>
+        <button type="button" class="btn btn-secondary" id="btnNormalize">按最后一期对齐至 100%</button>
+      </div>
+
+      <h2 style="margin-top:20px;font-size:.92rem">付款时间表（含登记费分摊）</h2>
+      <div class="plan-scroll">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>节点</th>
+              <th>预计日期</th>
+              <th class="num">房款</th>
+              <th class="num">登记/其他</th>
+              <th class="num">当期合计</th>
+              <th class="num">累计</th>
+            </tr>
+          </thead>
+          <tbody id="planScheduleBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="footnote">
+      <strong>免责声明：</strong>本工具基于公开市场常见费率与典型付款结构估算，不构成法律、税务或投资建议。
+      付款节点、登记费支付时间因酋长国及 SPA 而异；导出表格请务必与正式合同核对。
+    </p>
+  </div>
+
+  <script>
+    const VAT = 0.05;
+    const REG_HIGH = 4000;
+    const REG_LOW = 2000;
+    const REG_THRESHOLD = 500000;
+    const MORTGAGE_REG_RATE = 0.0025;
+    const MORTGAGE_REG_FIXED = 290;
+    const VALUATION = 3000;
+    const OQOOD_ADMIN = 580;
+    const DUBAI_REG_RATE_DEFAULT = 4;
+    const ABU_REG_RATE_DEFAULT = 2;
+
+    const PLAN_PRESETS = {
+      '20-80': { booking: 20, handover: 80, phases: 0 },
+      '10-10-10-10-10-50': { booking: 10, handover: 50, phases: 4 },
+      '60-40': { booking: 20, handover: 40, phases: 2 },
+      '50-50': { booking: 10, handover: 50, phases: 2 },
+      '80-20': { booking: 20, handover: 20, phases: 2 },
+    };
+
+    let planRows = [];
+    let lastSchedule = [];
+    let lastFeeMeta = {};
+
+    const fmt = (n) => Math.round(n).toLocaleString('en-US');
+    const fmtCny = (aed, rate) => '¥ ' + Math.round(aed * rate).toLocaleString('en-US');
+
+    function parseNum(id) {
+      const el = document.getElementById(id);
+      if (!el) return 0;
+      const v = Number(String(el.value).replace(/,/g, ''));
+      return Number.isFinite(v) ? v : 0;
+    }
+
+    function pct(part, whole) {
+      if (!whole) return '';
+      return `<span class="pct">${(part / whole * 100).toFixed(2)}%</span>`;
+    }
+
+    function registrationFee(price) {
+      return price > REG_THRESHOLD ? REG_HIGH : REG_LOW;
+    }
+
+    function computeLoanMetrics(loan, annualRatePct, years) {
+      if (!loan || loan <= 0 || years <= 0) {
+        return { monthly: 0, totalInterest: 0, totalPayment: 0, firstYearInterest: 0 };
+      }
+      const n = Math.round(years * 12);
+      const r = annualRatePct / 100 / 12;
+      if (r <= 0) {
+        const monthly = loan / n;
+        return { monthly, totalInterest: 0, totalPayment: loan, firstYearInterest: 0, months: n };
+      }
+      const factor = Math.pow(1 + r, n);
+      const monthly = loan * r * factor / (factor - 1);
+      const totalPayment = monthly * n;
+      const totalInterest = totalPayment - loan;
+      let balance = loan;
+      let firstYearInterest = 0;
+      for (let i = 0; i < Math.min(12, n); i++) {
+        const interestPart = balance * r;
+        firstYearInterest += interestPart;
+        balance -= monthly - interestPart;
+      }
+      return { monthly, totalInterest, totalPayment, firstYearInterest, months: n };
+    }
+
+    function renderMortgageSummary(loan, hasMortgage) {
+      const box = document.getElementById('mortgageSummary');
+      const tbody = document.getElementById('mortgageBreakdown');
+      if (!hasMortgage || loan <= 0) {
+        box.classList.remove('show');
+        tbody.innerHTML = '';
+        return;
+      }
+      const rate = parseNum('interestRate');
+      const years = parseNum('loanYears') || 25;
+      const m = computeLoanMetrics(loan, rate, years);
+      const aedCny = parseNum('aedCny') || 1.95;
+
+      tbody.innerHTML = [
+        row('贷款本金', loan, loan),
+        `<tr><td>年利率 ${rate}% · 期限 ${years} 年（${m.months} 期）<span class="pct">等额本息</span></td><td class="num">—</td></tr>`,
+        row('预计月供', m.monthly, loan, { note: fmtCny(m.monthly, aedCny) }),
+        row('首年利息（约）', m.firstYearInterest, loan),
+        row('全期利息合计', m.totalInterest, loan, { note: fmtCny(m.totalInterest, aedCny) }),
+        row('本息合计（全期）', m.totalPayment, loan, { total: true, note: fmtCny(m.totalPayment, aedCny) }),
+      ].join('');
+
+      box.classList.add('show');
+    }
+
+    function row(label, amount, base, opts = {}) {
+      if (opts.skip) return '';
+      const note = opts.note ? ` <span class="pct">${opts.note}</span>` : pct(amount, base);
+      return `<tr${opts.section ? ' class="section"' : ''}${opts.total ? ' class="total"' : ''}><td>${label}${note}</td><td class="num">${fmt(amount)}</td></tr>`;
+    }
+
+    function formatLocalDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function todayIso() {
+      return formatLocalDate(new Date());
+    }
+
+    function addMonths(dateStr, months) {
+      const d = new Date(dateStr + 'T12:00:00');
+      d.setMonth(d.getMonth() + Number(months));
+      return formatLocalDate(d);
+    }
+
+    function formatDateZh(iso) {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getBookingDate() {
+      const v = document.getElementById('bookingDate').value;
+      if (v) return v;
+      return todayIso();
+    }
+
+    function monthsBetween(startIso, endIso) {
+      const a = new Date(startIso + 'T12:00:00');
+      const b = new Date(endIso + 'T12:00:00');
+      if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 36;
+      const months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+      return Math.max(1, months);
+    }
+
+    function getHandoverMonths() {
+      const handoverDate = document.getElementById('handoverDate').value;
+      const booking = getBookingDate();
+      if (handoverDate) return monthsBetween(booking, handoverDate);
+      return Math.max(1, parseNum('handoverMonths') || 36);
+    }
+
+    function updateHandoverHint(months) {
+      const years = (months / 12).toFixed(1);
+      document.getElementById('handoverHint').textContent = `工期约 ${months} 个月（${years} 年）`;
+    }
+
+    function syncHandoverInputsFromMonths(months, skipField) {
+      const m = Math.max(1, Math.min(120, Math.round(months)));
+      if (skipField !== 'months') {
+        document.getElementById('handoverMonths').value = m;
+      }
+      if (skipField !== 'date') {
+        document.getElementById('handoverDate').value = addMonths(getBookingDate(), m);
+      }
+      updateHandoverHint(m);
+      return m;
+    }
+
+    function isHandoverRow(r, index) {
+      if (!planRows.length) return false;
+      if (index === planRows.length - 1) return true;
+      return /交房|尾款|handover|completion/i.test(r.name);
+    }
+
+    function getHandoverDateIso() {
+      const v = document.getElementById('handoverDate').value;
+      if (v) return v;
+      return addMonths(getBookingDate(), getHandoverMonths());
+    }
+
+    function getPlanRowDate(row, index) {
+      const n = planRows.length;
+      if (index === 0) return getBookingDate();
+      if (index === n - 1) return getHandoverDateIso();
+      return addMonths(getBookingDate(), row.month);
+    }
+
+    function redistributePlanMonths(totalMonths) {
+      if (!planRows.length) return;
+      const n = planRows.length;
+      const months = Math.max(1, Math.round(totalMonths));
+      planRows.forEach((r, i) => {
+        if (i === 0) r.month = 0;
+        else if (i === n - 1) r.month = months;
+        else r.month = Math.round(months * i / (n - 1));
+      });
+    }
+
+    function updateConstructionHint() {
+      const b = parseNum('bookingPct');
+      const h = parseNum('handoverPct');
+      const p = parseNum('constructionPhases');
+      const rest = 100 - b - h;
+      const el = document.getElementById('constructionHint');
+      if (rest < 0) {
+        el.textContent = '签约 + 交房已超过 100%，请调整比例';
+        return;
+      }
+      const per = p > 0 ? (rest / p).toFixed(1) : '0';
+      el.textContent = `施工期合计 ${rest.toFixed(1)}%，${p} 期${p > 0 ? ` ≈ 每期 ${per}%` : ''}（不含签约与交房）`;
+    }
+
+    function buildPlanFromStructure() {
+      const bookingPct = parseNum('bookingPct');
+      const handoverPct = parseNum('handoverPct');
+      const phases = Math.max(0, Math.min(12, Math.round(parseNum('constructionPhases'))));
+      const totalMonths = getHandoverMonths();
+      const constructionTotal = Math.max(0, 100 - bookingPct - handoverPct);
+      const perPhase = phases > 0 ? constructionTotal / phases : 0;
+
+      planRows = [{ name: '预订 / 签约', pct: bookingPct, month: 0 }];
+
+      for (let i = 1; i <= phases; i++) {
+        planRows.push({
+          name: phases === 1 ? '施工期' : `施工第 ${i} 期`,
+          pct: Math.round(perPhase * 100) / 100,
+          month: 0,
+        });
+      }
+
+      planRows.push({ name: '交房 / 尾款', pct: handoverPct, month: totalMonths });
+
+      const sum = planRows.reduce((s, r) => s + r.pct, 0);
+      if (Math.abs(sum - 100) > 0.01 && planRows.length) {
+        planRows[planRows.length - 1].pct = Math.round((planRows[planRows.length - 1].pct + (100 - sum)) * 10) / 10;
+      }
+
+      redistributePlanMonths(totalMonths);
+      updateConstructionHint();
+    }
+
+    function readPlanFromDom() {
+      const rows = [];
+      document.querySelectorAll('#planEditBody tr').forEach((tr) => {
+        rows.push({
+          name: tr.querySelector('.plan-name').value.trim() || '未命名',
+          pct: Number(tr.querySelector('.plan-pct').value) || 0,
+          month: Number(tr.querySelector('.plan-month').value) || 0,
+        });
+      });
+      planRows = rows;
+      return rows;
+    }
+
+    function renderPlanEdit() {
+      const tbody = document.getElementById('planEditBody');
+      tbody.innerHTML = planRows.map((r, i) => {
+        const date = getPlanRowDate(r, i);
+        const handoverCls = isHandoverRow(r, i) ? ' class="handover-row"' : '';
+        return `<tr data-idx="${i}"${handoverCls}>
+          <td><input type="text" class="plan-name" value="${escapeAttr(r.name)}" /></td>
+          <td><input type="number" class="plan-pct num" min="0" max="100" step="0.1" value="${r.pct}" /></td>
+          <td><input type="number" class="plan-month num" min="0" max="120" step="1" value="${r.month}" /></td>
+          <td class="plan-date">${formatDateZh(date)}</td>
+          <td class="num plan-amount">—</td>
+          <td><button type="button" class="btn-icon" data-del="${i}" title="删除">×</button></td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('input').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          document.getElementById('planPreset').value = 'custom';
+          if (inp.classList.contains('plan-month')) {
+            readPlanFromDom();
+            const tr = inp.closest('tr');
+            const idx = Number(tr.dataset.idx);
+            if (isHandoverRow(planRows[idx], idx)) {
+              const months = Math.max(1, Number(planRows[idx].month) || 1);
+              document.getElementById('handoverMonths').value = months;
+              document.getElementById('handoverDate').value = addMonths(getBookingDate(), months);
+              updateHandoverHint(months);
+              redistributePlanMonths(months);
+              renderPlanEdit();
+              onPlanChange();
+              return;
+            }
+            updateRowDatePreview(tr);
+          }
+          onPlanChange();
+        });
+      });
+      tbody.querySelectorAll('[data-del]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          planRows.splice(Number(btn.dataset.del), 1);
+          document.getElementById('planPreset').value = 'custom';
+          renderPlanEdit();
+          onPlanChange();
+        });
+      });
+      updatePlanAmountsPreview();
+    }
+
+    function escapeAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function escapeXml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function updateRowDatePreview(tr) {
+      if (!tr) return;
+      const idx = Number(tr.dataset.idx);
+      readPlanFromDom();
+      tr.querySelector('.plan-date').textContent = formatDateZh(getPlanRowDate(planRows[idx], idx));
+    }
+
+    function updatePlanAmountsPreview() {
+      const price = parseNum('price');
+      readPlanFromDom();
+      document.querySelectorAll('#planEditBody tr').forEach((tr, i) => {
+        const pctVal = planRows[i]?.pct || 0;
+        tr.querySelector('.plan-amount').textContent = fmt(price * pctVal / 100);
+        tr.querySelector('.plan-date').textContent = formatDateZh(getPlanRowDate(planRows[i], i));
+      });
+
+      const totalPct = planRows.reduce((s, r) => s + r.pct, 0);
+      const badge = document.getElementById('pctBadge');
+      const ok = Math.abs(totalPct - 100) < 0.05;
+      badge.textContent = `比例合计：${totalPct.toFixed(1)}%` + (ok ? '' : '（应为 100%）');
+      badge.className = 'pct-badge ' + (ok ? 'ok' : 'bad');
+    }
+
+    function getEmirateConfig() {
+      const isAbu = document.getElementById('emirate').value === 'abudhabi';
+      return {
+        isAbu,
+        authority: isAbu ? 'ADREC' : 'DLD',
+        defaultRegRate: isAbu ? ABU_REG_RATE_DEFAULT : DUBAI_REG_RATE_DEFAULT,
+        stageSection: isAbu ? 'ADREC 期房登记阶段' : 'Oqood 登记阶段',
+        regFeeLabel(ratePct) {
+          return isAbu
+            ? `ADREC 登记费（${ratePct}%）`
+            : `DLD 登记费（约 ${ratePct}%）`;
+        },
+        adminFee: isAbu ? 0 : OQOOD_ADMIN,
+        adminFeeLabel: isAbu ? null : 'Oqood 行政费',
+        handoverRegLabel: isAbu ? '交房产权登记附加费' : 'DLD 登记附加费',
+        mortgageRegLabel: isAbu ? '按揭登记费' : '按揭登记费（DLD）',
+        feeRowName: isAbu ? 'ADREC 期房登记费' : 'Oqood 登记（DLD + 行政费）',
+        preHandoverStage: isAbu ? 'ADREC 登记阶段' : 'Oqood 阶段',
+        waiverHint: isAbu ? '开发商减免 ADREC 登记费（部分期房促销）' : '开发商减免 DLD（部分期房促销）',
+        regWithFirstHint: isAbu ? 'ADREC 登记费计入首期一并支付' : 'Oqood 阶段 DLD 计入首期一并支付',
+        regRateFieldLabel: isAbu ? 'ADREC 登记费率（%）' : 'DLD 登记费率（%）',
+        transferRegLabel(ratePct) {
+          return isAbu
+            ? `ADREC 过户登记费（${ratePct}%）`
+            : `DLD 过户费（约 ${ratePct}%）`;
+        },
+      };
+    }
+
+    function isOffplan() {
+      return document.getElementById('scenario').value === 'offplan';
+    }
+
+    function updateScenarioUi() {
+      const offplan = isOffplan();
+      document.getElementById('paymentPlanSection').classList.toggle('hidden', !offplan);
+      document.getElementById('projectNameField').style.display = offplan ? 'block' : 'none';
+      document.getElementById('offplanAdvancedOptions').style.display = offplan ? 'block' : 'none';
+      document.getElementById('secondaryFeeFields').style.display = offplan ? 'none' : 'block';
+      document.getElementById('scenarioHint').textContent = offplan
+        ? '可配置付款计划；登记费按 Oqood / ADREC 阶段估算（不含交房 Title Deed 阶段）。'
+        : '二手过户一次性费用；含过户登记、Trustee、经纪佣金及 NOC 等。';
+      document.getElementById('mortgageToggleLabel').textContent = offplan
+        ? '使用按揭贷款（通常仅交房尾款可贷）'
+        : '使用按揭贷款';
+    }
+
+    function onScenarioChange() {
+      updateScenarioUi();
+      calc();
+    }
+
+    function updateEmirateUi() {
+      const cfg = getEmirateConfig();
+      document.getElementById('regRateLabel').textContent = cfg.regRateFieldLabel;
+      document.getElementById('waiverLabel').textContent = cfg.waiverHint;
+      document.getElementById('regWithFirstLabel').textContent = cfg.regWithFirstHint;
+    }
+
+    function onEmirateChange() {
+      const cfg = getEmirateConfig();
+      document.getElementById('dldRate').value = cfg.defaultRegRate;
+      updateEmirateUi();
+      calc();
+    }
+
+    function buildFeeMeta() {
+      const cfg = getEmirateConfig();
+      const scenario = document.getElementById('scenario').value;
+      const price = parseNum('price');
+      const hasMortgage = document.getElementById('mortgage').checked;
+      const dldRate = parseNum('dldRate') / 100;
+      const trusteeBase = parseNum('trusteeFee');
+      const bankFeeRate = parseNum('bankFeeRate') / 100;
+      const agencyRate = parseNum('agencyRate') / 100;
+      const nocFee = parseNum('nocFee');
+      const dldWaiver = document.getElementById('dldWaiver').checked;
+      const ltv = Math.min(80, Math.max(0, parseNum('ltv'))) / 100;
+      const loan = hasMortgage ? price * ltv : 0;
+
+      const regMain = dldWaiver ? 0 : price * dldRate;
+      const regFee = registrationFee(price);
+      const trustee = trusteeBase * (1 + VAT);
+      const adminFee = cfg.adminFee;
+      let bankFee = 0, mortgageReg = 0, valuation = 0;
+      if (hasMortgage) {
+        bankFee = loan * bankFeeRate * (1 + VAT);
+        mortgageReg = loan * MORTGAGE_REG_RATE + MORTGAGE_REG_FIXED;
+        valuation = VALUATION;
+      }
+
+      let agency = 0, noc = 0;
+      if (scenario === 'secondary') {
+        agency = price * agencyRate * (1 + VAT);
+        noc = nocFee;
+      }
+
+      const handoverFees = regFee + trustee + bankFee + mortgageReg + valuation;
+      const preHandoverFees = regMain + adminFee;
+      const secondaryTransferTotal = scenario === 'secondary'
+        ? regMain + regFee + trustee + agency + noc + bankFee + mortgageReg + valuation
+        : 0;
+
+      return {
+        cfg, scenario, price, regMain, adminFee, regFee, trustee, agency, noc,
+        handoverFees, preHandoverFees, secondaryTransferTotal,
+        regWithFirst: document.getElementById('dldWithFirst').checked,
+        feeRowName: cfg.feeRowName,
+        includeHandoverInPlan: false,
+      };
+    }
+
+    function buildSchedule(feeMeta) {
+      const price = feeMeta.price;
+      readPlanFromDom();
+      const rows = planRows.map((r, i) => {
+        const propertyAmt = price * r.pct / 100;
+        const date = getPlanRowDate(r, i);
+        return { idx: i + 1, name: r.name, pct: r.pct, month: r.month, date, propertyAmt, feeAmt: 0 };
+      });
+
+      if (!rows.length) return [];
+
+      const last = rows[rows.length - 1];
+      if (feeMeta.regWithFirst) {
+        rows[0].feeAmt += feeMeta.preHandoverFees;
+      } else {
+        rows.splice(1, 0, {
+          idx: 0,
+          name: feeMeta.feeRowName,
+          pct: 0,
+          month: 1,
+          date: addMonths(getBookingDate(), 1),
+          propertyAmt: 0,
+          feeAmt: feeMeta.preHandoverFees,
+          isFeeRow: true,
+        });
+        rows.forEach((r, i) => { r.idx = i + 1; });
+      }
+      if (feeMeta.includeHandoverInPlan) {
+        last.feeAmt += feeMeta.handoverFees;
+      }
+
+      let cumulative = 0;
+      rows.forEach((r) => {
+        r.total = r.propertyAmt + r.feeAmt;
+        cumulative += r.total;
+        r.cumulative = cumulative;
+      });
+      return rows;
+    }
+
+    function renderSchedule(schedule) {
+      const tbody = document.getElementById('planScheduleBody');
+      if (!schedule.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">请添加付款节点</td></tr>';
+        return;
+      }
+      tbody.innerHTML = schedule.map((r) => `<tr>
+        <td>${r.idx}</td>
+        <td>${r.name}${r.pct ? `<span class="pct">${r.pct}%</span>` : ''}</td>
+        <td>${formatDateZh(r.date)}</td>
+        <td class="num">${r.propertyAmt ? fmt(r.propertyAmt) : '—'}</td>
+        <td class="num">${r.feeAmt ? fmt(r.feeAmt) : '—'}</td>
+        <td class="num"><strong>${fmt(r.total)}</strong></td>
+        <td class="num">${fmt(r.cumulative)}</td>
+      </tr>`).join('');
+    }
+
+    function calc() {
+      const cfg = getEmirateConfig();
+      const offplan = isOffplan();
+      const price = parseNum('price');
+      const hasMortgage = document.getElementById('mortgage').checked;
+      const dldRate = parseNum('dldRate') / 100;
+      const bankFeeRate = parseNum('bankFeeRate') / 100;
+      const aedCny = parseNum('aedCny') || 1.95;
+
+      const ltv = Math.min(80, Math.max(0, parseNum('ltv'))) / 100;
+      const downPct = 1 - ltv;
+      document.getElementById('downPct').value = Math.round(downPct * 100);
+
+      const loan = hasMortgage ? price * ltv : 0;
+      const downPayment = hasMortgage ? price * downPct : price;
+
+      const feeMeta = buildFeeMeta();
+      lastFeeMeta = feeMeta;
+
+      let bankFee = 0, mortgageReg = 0, valuation = 0;
+      if (hasMortgage) {
+        bankFee = loan * bankFeeRate * (1 + VAT);
+        mortgageReg = loan * MORTGAGE_REG_RATE + MORTGAGE_REG_FIXED;
+        valuation = VALUATION;
+      }
+
+      const lines = [];
+      let extraAtTransfer = 0;
+      let cashNeed = 0;
+      let cashLabel = '近期需准备现金';
+      let cashSub = '';
+      let timingHtml = '';
+
+      if (offplan) {
+        extraAtTransfer = feeMeta.preHandoverFees;
+
+        lines.push(row(`── ${cfg.stageSection}`, 0, price, { section: true }));
+        lines.push(row(cfg.regFeeLabel(dldRate * 100), feeMeta.regMain, price));
+        if (cfg.adminFeeLabel) {
+          lines.push(row(cfg.adminFeeLabel, feeMeta.adminFee, price));
+        }
+        lines.push(row('额外成本合计（不含房价）', extraAtTransfer, price, { total: true }));
+
+        lastSchedule = buildSchedule(feeMeta);
+        renderSchedule(lastSchedule);
+        updatePlanAmountsPreview();
+
+        const firstPay = lastSchedule[0];
+        cashNeed = firstPay ? firstPay.total : extraAtTransfer;
+        cashLabel = '首期需准备（含登记费）';
+        cashSub = firstPay
+          ? formatDateZh(firstPay.date) + ' · ' + fmtCny(cashNeed, aedCny)
+          : fmtCny(cashNeed, aedCny);
+        timingHtml = '<strong>期房提示：</strong>见下方付款计划表。'
+          + cfg.preHandoverStage + '费用约 <b>AED ' + fmt(extraAtTransfer) + '</b>。'
+          + ' 交房 / Title Deed 阶段费用未计入（以交房时实际账单为准）。'
+          + (cfg.isAbu ? ' 阿布扎比期房登记由 <b>ADREC</b> 收取，常见费率为 2%。' : ' 迪拜 Oqood 登记由 <b>DLD</b> 收取，常见费率为 4%。');
+      } else {
+        extraAtTransfer = feeMeta.secondaryTransferTotal;
+
+        lines.push(row('── 过户交割', 0, price, { section: true }));
+        lines.push(row(cfg.transferRegLabel(dldRate * 100), feeMeta.regMain, price));
+        lines.push(row(cfg.handoverRegLabel, feeMeta.regFee, price));
+        lines.push(row('Trustee 托管费（含 VAT）', feeMeta.trustee, price));
+        lines.push(row('买方经纪佣金（含 VAT）', feeMeta.agency, price));
+        lines.push(row('NOC / 开发商同意书', feeMeta.noc, price));
+        if (hasMortgage) {
+          lines.push(row('银行手续费（含 VAT）', bankFee, price, { note: '占贷款 ' + (bankFeeRate * 100) + '%' }));
+          lines.push(row('银行评估费', valuation, price));
+          lines.push(row(cfg.mortgageRegLabel, mortgageReg, price));
+        }
+        lines.push(row('额外成本合计（不含房价）', extraAtTransfer, price, { total: true }));
+
+        cashNeed = downPayment + extraAtTransfer;
+        cashLabel = hasMortgage ? '过户时需准备（首付+费用）' : '过户时需准备（全款+费用）';
+        cashSub = fmtCny(cashNeed, aedCny) + (hasMortgage ? ' · 含首付 ' + Math.round(downPct * 100) + '%' : ' · 全款');
+        timingHtml = '<strong>二手现房提示：</strong>以上费用通常在过户交割时与首付一并支付（具体以 SPA 及银行要求为准）。';
+      }
+
+      document.getElementById('breakdown').innerHTML = lines.join('');
+      document.getElementById('extraTotal').textContent = 'AED ' + fmt(extraAtTransfer);
+      document.getElementById('extraPct').textContent = fmtCny(extraAtTransfer, aedCny) + ' · 约为房价的 ' + (price ? (extraAtTransfer / price * 100).toFixed(1) : '0') + '%';
+      document.getElementById('cashNeed').textContent = 'AED ' + fmt(cashNeed);
+      document.getElementById('cashNeedSub').textContent = cashSub;
+      document.getElementById('cashNeedLabel').textContent = cashLabel;
+      document.getElementById('priceCny').textContent = Math.round(price * aedCny).toLocaleString('en-US');
+      document.getElementById('timingNote').innerHTML = timingHtml;
+      renderMortgageSummary(loan, hasMortgage);
+    }
+
+    function onPlanChange() {
+      calc();
+    }
+
+    function applyPreset(key) {
+      if (key === 'custom' || !PLAN_PRESETS[key]) return;
+      const p = PLAN_PRESETS[key];
+      document.getElementById('bookingPct').value = p.booking;
+      document.getElementById('handoverPct').value = p.handover;
+      document.getElementById('constructionPhases').value = p.phases;
+      buildPlanFromStructure();
+      renderPlanEdit();
+      onPlanChange();
+    }
+
+    function onPlanStructureChange() {
+      document.getElementById('planPreset').value = 'custom';
+      buildPlanFromStructure();
+      renderPlanEdit();
+      onPlanChange();
+    }
+
+    function onHandoverMonthsChange() {
+      const months = Math.max(1, Math.min(120, Math.round(parseNum('handoverMonths'))));
+      document.getElementById('handoverMonths').value = months;
+      document.getElementById('handoverDate').value = addMonths(getBookingDate(), months);
+      updateHandoverHint(months);
+      document.getElementById('planPreset').value = 'custom';
+      redistributePlanMonths(months);
+      renderPlanEdit();
+      calc();
+    }
+
+    function onHandoverDateChange() {
+      const handoverDate = document.getElementById('handoverDate').value;
+      if (!handoverDate) return;
+      const months = monthsBetween(getBookingDate(), handoverDate);
+      document.getElementById('handoverMonths').value = months;
+      updateHandoverHint(months);
+      document.getElementById('planPreset').value = 'custom';
+      redistributePlanMonths(months);
+      renderPlanEdit();
+      calc();
+    }
+
+    function onBookingDateChange() {
+      const months = getHandoverMonths();
+      const handoverDate = document.getElementById('handoverDate').value;
+      if (handoverDate) {
+        document.getElementById('handoverMonths').value = monthsBetween(getBookingDate(), handoverDate);
+        updateHandoverHint(monthsBetween(getBookingDate(), handoverDate));
+      } else {
+        document.getElementById('handoverDate').value = addMonths(getBookingDate(), months);
+        updateHandoverHint(months);
+      }
+      redistributePlanMonths(getHandoverMonths());
+      renderPlanEdit();
+      calc();
+    }
+
+    function normalizeTo100() {
+      readPlanFromDom();
+      if (!planRows.length) return;
+      const sum = planRows.reduce((s, r) => s + r.pct, 0);
+      if (sum <= 0) return;
+      const diff = 100 - sum;
+      planRows[planRows.length - 1].pct = Math.round((planRows[planRows.length - 1].pct + diff) * 10) / 10;
+      document.getElementById('planPreset').value = 'custom';
+      renderPlanEdit();
+      onPlanChange();
+    }
+
+    function downloadBlob(content, mime, filename) {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function xmlCell(value, type) {
+      const t = type ? ` ss:Type="${type}"` : '';
+      return `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
+    }
+
+    function xmlCellNum(n) {
+      return `<Cell><Data ss:Type="Number">${Number.isFinite(n) ? n : 0}</Data></Cell>`;
+    }
+
+    function exportExcel() {
+      readPlanFromDom();
+      const feeMeta = buildFeeMeta();
+      const schedule = buildSchedule(feeMeta);
+      const aedCny = parseNum('aedCny') || 1.95;
+      const emirate = document.getElementById('emirate').value === 'dubai' ? '迪拜' : '阿布扎比';
+      const project = document.getElementById('projectName').value.trim() || '未命名项目';
+      const price = feeMeta.price;
+      const totalPct = planRows.reduce((s, r) => s + r.pct, 0);
+
+      const metaRows = [
+        ['阿联酋期房付款计划', ''],
+        ['项目名称', project],
+        ['酋长国', emirate],
+        ['购房总价 AED', price],
+        ['约合人民币 CNY', Math.round(price * aedCny)],
+        ['签约日期', getBookingDate()],
+        ['预计完工/交房日', document.getElementById('handoverDate').value || addMonths(getBookingDate(), getHandoverMonths())],
+        ['工期（月）', getHandoverMonths()],
+        ['施工期付款期数', parseNum('constructionPhases')],
+        ['签约比例%', parseNum('bookingPct')],
+        ['交房比例%', parseNum('handoverPct')],
+        ['导出时间', new Date().toLocaleString('zh-CN')],
+        ['', ''],
+        ['── 付款节点配置', ''],
+        ['节点', '比例%', '签约后月数', '房款 AED'],
+      ];
+
+      planRows.forEach((r) => {
+        metaRows.push([r.name, r.pct, r.month, Math.round(price * r.pct / 100)]);
+      });
+      metaRows.push(['比例合计', totalPct, '', '']);
+      metaRows.push(['', '']);
+      metaRows.push(['── 付款时间表（含登记费）', '']);
+      metaRows.push(['序号', '节点', '预计日期', '比例%', '房款 AED', '登记/其他 AED', '当期合计 AED', '累计 AED', '约 CNY']);
+
+      schedule.forEach((r) => {
+        metaRows.push([
+          r.idx, r.name, r.date, r.pct || '',
+          Math.round(r.propertyAmt), Math.round(r.feeAmt),
+          Math.round(r.total), Math.round(r.cumulative),
+          Math.round(r.total * aedCny),
+        ]);
+      });
+
+      metaRows.push(['', '']);
+      metaRows.push(['── 登记费用摘要', '']);
+      const cfg = getEmirateConfig();
+      if (isOffplan()) {
+        metaRows.push([cfg.preHandoverStage, Math.round(feeMeta.preHandoverFees)]);
+        metaRows.push(['登记机构', cfg.authority]);
+        metaRows.push(['额外成本合计', Math.round(feeMeta.preHandoverFees)]);
+        metaRows.push(['说明', '不含交房 Title Deed 阶段费用']);
+      } else {
+        metaRows.push(['过户交割合计', Math.round(feeMeta.secondaryTransferTotal)]);
+        metaRows.push(['登记机构', cfg.authority]);
+      }
+
+      if (document.getElementById('mortgage').checked) {
+        const ltv = Math.min(80, Math.max(0, parseNum('ltv'))) / 100;
+        const loan = price * ltv;
+        const rate = parseNum('interestRate');
+        const years = parseNum('loanYears') || 25;
+        const lm = computeLoanMetrics(loan, rate, years);
+        metaRows.push(['', '']);
+        metaRows.push(['── 贷款利息估算（等额本息）', '']);
+        metaRows.push(['贷款本金 AED', Math.round(loan)]);
+        metaRows.push(['年利率 %', rate]);
+        metaRows.push(['贷款年限', years]);
+        metaRows.push(['预计月供 AED', Math.round(lm.monthly)]);
+        metaRows.push(['首年利息 AED', Math.round(lm.firstYearInterest)]);
+        metaRows.push(['全期利息 AED', Math.round(lm.totalInterest)]);
+        metaRows.push(['本息合计 AED', Math.round(lm.totalPayment)]);
+      }
+
+      metaRows.push(['', '']);
+      metaRows.push(['免责声明', '估算仅供参考，以 SPA 及官方账单为准']);
+
+      let sheetRows = '';
+      metaRows.forEach((cells) => {
+        sheetRows += '<Row>' + cells.map((c) => {
+          if (typeof c === 'number') return xmlCellNum(c);
+          return xmlCell(c == null ? '' : String(c));
+        }).join('') + '</Row>\n';
+      });
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="付款计划">
+<Table>
+${sheetRows}
+</Table>
+</Worksheet>
+</Workbook>`;
+
+      const safeName = project.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+      downloadBlob('\ufeff' + xml, 'application/vnd.ms-excel;charset=utf-8', `${safeName}_付款计划.xls`);
+    }
+
+    function bind() {
+      const ids = ['price', 'mortgage', 'ltv', 'interestRate', 'loanYears', 'dldRate', 'trusteeFee', 'bankFeeRate', 'agencyRate', 'nocFee', 'aedCny', 'dldWaiver', 'dldWithFirst', 'projectName'];
+      ids.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', calc);
+        el.addEventListener('change', calc);
+      });
+
+      document.getElementById('emirate').addEventListener('change', onEmirateChange);
+      document.getElementById('scenario').addEventListener('change', onScenarioChange);
+
+      document.getElementById('bookingDate').addEventListener('change', onBookingDateChange);
+      document.getElementById('handoverDate').addEventListener('change', onHandoverDateChange);
+      document.getElementById('handoverDate').addEventListener('input', onHandoverDateChange);
+      document.getElementById('handoverMonths').addEventListener('change', onHandoverMonthsChange);
+      document.getElementById('handoverMonths').addEventListener('input', onHandoverMonthsChange);
+
+      ['constructionPhases', 'bookingPct', 'handoverPct'].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener('change', onPlanStructureChange);
+        el.addEventListener('input', () => {
+          updateConstructionHint();
+          document.getElementById('planPreset').value = 'custom';
+        });
+      });
+
+      document.getElementById('btnRebuildPlan').addEventListener('click', onPlanStructureChange);
+
+      document.getElementById('mortgage').addEventListener('change', (e) => {
+        document.getElementById('mortgageFields').style.display = e.target.checked ? 'block' : 'none';
+        calc();
+      });
+
+      document.getElementById('price').addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^\d]/g, '');
+        calc();
+      });
+
+      document.getElementById('advToggle').addEventListener('click', () => {
+        const box = document.getElementById('advanced');
+        const open = box.classList.toggle('open');
+        document.getElementById('advToggle').textContent = (open ? '▾ ' : '▸ ') + '自定义费率（可选）';
+      });
+
+      document.getElementById('planPreset').addEventListener('change', (e) => {
+        applyPreset(e.target.value);
+      });
+
+      document.getElementById('btnAddRow').addEventListener('click', () => {
+        readPlanFromDom();
+        const lastMonth = planRows.length ? planRows[planRows.length - 1].month : 0;
+        planRows.push({ name: '新节点', pct: 0, month: lastMonth + 6 });
+        document.getElementById('planPreset').value = 'custom';
+        renderPlanEdit();
+        onPlanChange();
+      });
+
+      document.getElementById('btnNormalize').addEventListener('click', normalizeTo100);
+      document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
+    }
+
+    document.getElementById('bookingDate').value = todayIso();
+    syncHandoverInputsFromMonths(36);
+    updateEmirateUi();
+    updateScenarioUi();
+    applyPreset('10-10-10-10-10-50');
+    bind();
+    calc();
+  </script>
+</body>
+</html>
