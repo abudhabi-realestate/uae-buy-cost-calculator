@@ -2,7 +2,7 @@
 
 离线静态页，支持**期房**与**二手现房**费用估算；期房含付款计划与 Excel 导出。
 
-**在线访问：** https://SobhaZanYan.github.io/uae-buy-cost-calculator/
+**在线访问：** https://abudhabi-realestate.github.io/uae-buy-cost-calculator/
 
 ## 功能
 
